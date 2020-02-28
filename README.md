@@ -101,6 +101,21 @@ plug(ReverseProxyPlug,
 )
 ```
 
+### Calling directly in controller
+
+It's useful when you want to do permission check(or hide the real path) of the resource
+in controller before send the response back.
+
+- `:upstream_as_url?` (`false` by default) - Use upstream as the target url or not.
+
+```elixir
+ReverseProxy.direct_call(
+  conn,
+  upstream_as_url?: true,
+  upstream: "//example.com/bar"
+)
+```
+
 ## License
 
 ReverseProxyPlug is released under the MIT License.

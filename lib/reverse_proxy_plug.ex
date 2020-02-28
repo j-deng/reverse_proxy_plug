@@ -18,6 +18,23 @@ defmodule ReverseProxyPlug do
       |> String.to_atom()
     end)
 
+    parse_options(opts)
+  end
+
+  @spec call(Plug.Conn.t(), Keyword.t()) :: Plug.Conn.t()
+  def call(conn, opts) do
+    body = read_body(conn)
+    conn |> request(body, opts) |> response(conn, opts)
+  end
+
+  @spec direct_call(Plug.Conn.t(), Keyword.t()) :: Plug.Conn.t()
+  def direct_call(conn, opts) do
+    opts = parse_options(opts)
+    body = read_body(conn)
+    conn |> request(body, opts) |> response(conn, opts)
+  end
+
+  defp parse_options(opts) do
     upstream_parts =
       opts
       |> Keyword.get(:upstream, "")
@@ -32,12 +49,6 @@ defmodule ReverseProxyPlug do
     |> Keyword.put_new(:client, @http_client)
     |> Keyword.put_new(:client_options, [])
     |> Keyword.put_new(:response_mode, :stream)
-  end
-
-  @spec call(Plug.Conn.t(), Keyword.t()) :: Plug.Conn.t()
-  def call(conn, opts) do
-    body = read_body(conn)
-    conn |> request(body, opts) |> response(conn, opts)
   end
 
   def request(conn, body, opts) do
@@ -166,7 +177,12 @@ defmodule ReverseProxyPlug do
                   "please add them as a list param of opts[:custom_http_methods]."
       end
 
-    url = prepare_url(conn, options)
+    url =
+      if Keyword.get(options, :upstream_as_url?, false) do
+        options[:upstream]
+      else
+        prepare_url(conn, options)
+      end
 
     headers =
       conn.req_headers
